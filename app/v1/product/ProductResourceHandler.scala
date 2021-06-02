@@ -9,12 +9,27 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * DTO for displaying product information.
   */
+
 case class ProductResource(id: String, typeProduct: String, name: String, gender: String, size: String, price: Double)
 case class BasicProductResource(name: String, price: Double)
 
 /**
   * Mapping to read/write a ProductResource out as a JSON value.
   */
+
+/*trait FormatJson[A]{
+  def getFormat(p:A):Format[A]
+}
+
+object FormatJson{
+  implicit val prdComplete: FormatJson[ProductResource] = new FormatJson[ProductResource] {
+    override def getFormat(p: ProductResource): Format[ProductResource] = Json.format
+  }
+  implicit val prdBasic: FormatJson[BasicProductResource] = new FormatJson[BasicProductResource] {
+    override def getFormat(p: BasicProductResource): Format[BasicProductResource] = Json.format
+  }
+}*/
+
 object ProductResource {
   implicit val format: Format[ProductResource] = Json.format
 }
@@ -32,7 +47,7 @@ class ProductResourceHandler @Inject()(
                                      productRepository: ProductRepository)(implicit ec: ExecutionContext) {
 
   def create(productInput: ProductFormInput)(implicit mc: MarkerContext): Future[ProductResource] = {
-    val data = ProductData(ProductId("999"), productInput.typeProduct, productInput.name, productInput.gender, productInput.size, productInput.price.toDouble)
+    val data = ProductData(999, (Integer.parseInt(productInput.typeProduct)), productInput.name, productInput.gender, productInput.size, productInput.price.toDouble)
     // We don't actually create the product, so return what we have
     productRepository.create(data).map { id =>
       createProductResource(data)
@@ -40,7 +55,7 @@ class ProductResourceHandler @Inject()(
   }
 
   def lookupProduct(id: String)(implicit mc: MarkerContext): Future[Option[ProductResource]] = {
-    val productFuture = productRepository.get(ProductId(id))
+    val productFuture = productRepository.get(Integer.parseInt(id))
     productFuture.map { maybeProductData =>
       maybeProductData.map { productData =>
         createProductResource(productData)
@@ -49,7 +64,7 @@ class ProductResourceHandler @Inject()(
   }
 
   def lookupBasicProduct(id: String)(implicit mc: MarkerContext): Future[Option[BasicProductResource]] = {
-    val productFuture = productRepository.get(ProductId(id))
+    val productFuture = productRepository.get(Integer.parseInt(id))
     productFuture.map { maybeProductData =>
       maybeProductData.map { productData =>
         createBasicProductResource(productData)
@@ -70,7 +85,7 @@ class ProductResourceHandler @Inject()(
   }
 
   private def createProductResource(p: ProductData): ProductResource = {
-    ProductResource(p.id.toString, p.typeProduct, p.name, p.gender, p.size, p.price)
+    ProductResource(p.id.toString, p.typeProduct.toString, p.name, p.gender, p.size, p.price)
   }
 
   private def createBasicProductResource(p: ProductData): BasicProductResource = {
