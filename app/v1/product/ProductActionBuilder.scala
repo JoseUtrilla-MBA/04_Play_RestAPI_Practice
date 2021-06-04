@@ -19,6 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ProductRequestHeader
     extends MessagesRequestHeader
     with PreferredMessagesProvider
+
 class ProductRequest[A](request: Request[A], val messagesApi: MessagesApi)
     extends WrappedRequest(request)
     with ProductRequestHeader

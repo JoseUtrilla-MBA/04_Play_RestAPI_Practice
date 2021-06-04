@@ -15,10 +15,9 @@ lazy val root = (project in file("."))
       "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
 
       "org.tpolecat" %% "doobie-core"      % "0.12.1",
-
+      "org.tpolecat" %% "doobie-hikari"    % "0.12.1",          // HikariCP transactor.
       "org.tpolecat" %% "doobie-postgres"  % "0.12.1",          // Postgres driver 42.2.19 + type mappings.
       "org.tpolecat" %% "doobie-specs2"    % "0.12.1" % "test", // Specs2 support for typechecking statements.
-      "org.tpolecat" %% "doobie-scalatest" % "0.12.1" % "test"  // ScalaTest support for typechecking statements.
 
     ),
     scalacOptions ++= Seq(
