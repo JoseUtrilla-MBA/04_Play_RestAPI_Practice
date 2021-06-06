@@ -37,15 +37,9 @@ class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: 
 
   def productList: Action[AnyContent] = ProductAction.async { implicit request =>
     logger.trace("productList: ")
-    val init = startDataTable
     ProductResourceHandler.listProductResource.map { products =>
       Ok(Json.toJson(products))
     }
-  }
-
-   lazy val startDataTable: Unit = {
-    logger.trace(s"start initial table")
-    ProductResourceHandler.startDataTable
   }
 
   def basicProductList: Action[AnyContent] = ProductAction.async { implicit request =>

@@ -3,8 +3,8 @@ package v1.product.data
 import akka.actor.ActorSystem
 import play.api.{Logger, MarkerContext}
 import play.api.libs.concurrent.CustomExecutionContext
-
 import cats.effect._
+import doobie.Fragment
 import doobie.implicits._
 
 import javax.inject.Inject
@@ -66,7 +66,7 @@ class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
   val connection = new Connection
   private val logger = Logger(this.getClass)
 
-  def startDataTable(): Unit = {
+  lazy val startDataTable: Unit = {
 
     val productList = List(
       ProductData(1, 1, "Shirt", "W", "M", 30.5),
@@ -76,13 +76,21 @@ class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
       ProductData(5, 3, "Hat", "W", "s", 59.99),
       ProductData(6, 2, "Sneakers", "W", "41", 47.5),
     )
+    val truncatedTable = sql"truncate table product".update.run
+    connection.transactor.use(truncatedTable.transact[IO]).unsafeRunSync()
+    logger.trace(s"truncate table product")
 
-    for {
-      p <- productList
-    } yield create(p)
+    val startTable = fr"insert into product (id_product, id_typeProduct, name, gender, size, price) values"
+    val inserts = (productList.flatMap(p => s"(${p.id}, ${p.id_typeProduct}, \'${p.name}\', \'${p.gender}\', " +
+      s"\'${p.size}\', ${p.price})")mkString "").replace(")(", "),(")
+    connection.transactor.use((startTable ++ Fragment.const(inserts)).update.run.transact[IO]).unsafeRunSync()
+    logger.trace(s"inserting records:\n\t${inserts.replace("),(","),\n\t(")}")
+
   }
+  val start = startDataTable
 
   override def list()(implicit mc: MarkerContext): Future[Iterable[ProductData]] = {
+    //val initialDataTable=startDataTable
     Future {
       logger.trace("list: ")
       val productList = sql"select * from product".query[ProductData].to[List]

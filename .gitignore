@@ -8,3 +8,10 @@ null
 .scalafix.conf
 webui.sbt
 assignment.sbt
+.bloop/
+.metals/
+.vscode/
+project/.bloop/
+project/metals.sbt
+project/project/
+

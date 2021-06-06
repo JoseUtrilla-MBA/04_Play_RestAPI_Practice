@@ -38,8 +38,6 @@ class ProductResourceHandler @Inject()(productRepository: ProductRepository)(imp
     }
   }
 
-  lazy val startDataTable: Unit = productRepository.startDataTable()
-
   def listBasicProductResource(implicit mc: MarkerContext): Future[Iterable[BasicProductResource]] = {
     productRepository.list().map { productDataList =>
       productDataList.map(productData => createBasicProductResource(productData))
