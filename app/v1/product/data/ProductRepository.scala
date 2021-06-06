@@ -77,16 +77,16 @@ class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
       ProductData(6, 2, "Sneakers", "W", "41", 47.5),
     )
     val truncatedTable = sql"truncate table product".update.run
-    connection.transactor.use(truncatedTable.transact[IO]).unsafeRunSync()
-    logger.trace(s"truncate table product")
+    val result = connection.transactor.use(truncatedTable.transact[IO]).unsafeRunSync()
+    logger.trace(s"truncate table product: $result records")
 
     val startTable = fr"insert into product (id_product, id_typeProduct, name, gender, size, price) values"
     val inserts = (productList.flatMap(p => s"(${p.id}, ${p.id_typeProduct}, \'${p.name}\', \'${p.gender}\', " +
-      s"\'${p.size}\', ${p.price})")mkString "").replace(")(", "),(")
-    connection.transactor.use((startTable ++ Fragment.const(inserts)).update.run.transact[IO]).unsafeRunSync()
-    logger.trace(s"inserting records:\n\t${inserts.replace("),(","),\n\t(")}")
-
+      s"\'${p.size}\', ${p.price})") mkString "").replace(")(", "),(")
+    val l = connection.transactor.use((startTable ++ Fragment.const(inserts)).update.run.transact[IO]).unsafeRunSync()
+    logger.trace(s"inserting rows($l):\n\t${inserts.replace("),(", "),\n\t(")}")
   }
+
   val start = startDataTable
 
   override def list()(implicit mc: MarkerContext): Future[Iterable[ProductData]] = {
