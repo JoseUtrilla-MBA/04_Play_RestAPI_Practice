@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import play.api.{Logger, MarkerContext}
 import play.api.libs.concurrent.CustomExecutionContext
 import cats.effect._
-import cats.implicits.catsSyntaxTuple2Semigroupal
 import doobie.Fragment
 import doobie.implicits._
 
@@ -41,6 +40,8 @@ class ProductExecutionContext @Inject()(actorSystem: ActorSystem)
   */
 trait ProductRepository {
 
+  def startDataTable(): Unit
+
   def list()(implicit mc: MarkerContext): Future[Iterable[ProductData]]
 
   def get(id: Int)(implicit mc: MarkerContext): Future[Option[ProductData]]
@@ -50,6 +51,14 @@ trait ProductRepository {
   def delete(id: Int)(implicit mc: MarkerContext): Future[Iterable[ProductData]]
 
 }
+
+/**
+  * A trivial implementation for the ProductRepository.
+  *
+  * A custom execution context is used here to establish that blocking operations should be
+  * executed in a different thread than Play's ExecutionContext, which is used for CPU bound tasks
+  * such as rendering.
+  */
 
 class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
   extends ProductRepository {
@@ -67,22 +76,21 @@ class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
       ProductData(5, 3, "Hat", "W", "s", 59.99),
       ProductData(6, 2, "Sneakers", "W", "41", 47.5),
     )
-
     val truncatedTable = sql"truncate table product".update.run
+    connection.transactor.use(truncatedTable.transact[IO]).unsafeRunSync()
+    logger.trace(s"truncate table product")
 
-    val inserts = productList.flatMap(p => s"(${p.id}, ${p.id_typeProduct}, \'${p.name}\', \'${p.gender}\', " +
-      s"\'${p.size}\', ${p.price})").mkString.replace(")(", "),\n\t(")
-    val startTable = (fr"insert into product (id_product, id_typeProduct, name, gender, size, price) values"
-      ++ Fragment.const(inserts)).update.run
+    val startTable = fr"insert into product (id_product, id_typeProduct, name, gender, size, price) values"
+    val inserts = (productList.flatMap(p => s"(${p.id}, ${p.id_typeProduct}, \'${p.name}\', \'${p.gender}\', " +
+      s"\'${p.size}\', ${p.price})")mkString "").replace(")(", "),(")
+    connection.transactor.use((startTable ++ Fragment.const(inserts)).update.run.transact[IO]).unsafeRunSync()
+    logger.trace(s"inserting records:\n\t${inserts.replace("),(","),\n\t(")}")
 
-    val l = connection.transactor.use((truncatedTable, startTable).mapN(_ + _).transact[IO]).unsafeRunSync()
-    logger.trace(s"inserting initial rows(${l}):\n\t$inserts")
   }
-
   val start = startDataTable
 
-
   override def list()(implicit mc: MarkerContext): Future[Iterable[ProductData]] = {
+    //val initialDataTable=startDataTable
     Future {
       logger.trace("list: ")
       val productList = sql"select * from product".query[ProductData].to[List]
