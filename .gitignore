@@ -14,4 +14,6 @@ assignment.sbt
 project/.bloop/
 project/metals.sbt
 project/project/
+app/v1/product/untitled.sc
+
 
