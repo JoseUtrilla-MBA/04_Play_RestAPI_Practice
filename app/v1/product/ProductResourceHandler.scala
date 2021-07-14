@@ -7,10 +7,6 @@ import v1.product.data.{ManageTypeProduct, ProductData, ProductRepository}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-
-/**
-  * DTO for displaying product information.
-  */
 case class ProductResource(id: Int, typeProduct: String, name: String, gender: String, size: String, price: Double)
 
 case class BasicProductResource(name: String, price: Double)
@@ -29,7 +25,7 @@ object BasicProductResource {
 /**
   * Controls access to the backend data, returning [[ProductResource]]
   */
-class ProductResourceHandler @Inject()(productRepository: ProductRepository)(implicit ec: ExecutionContext) {
+class ProductResourceHandler @Inject()(manageTypeProduct: ManageTypeProduct, productRepository: ProductRepository)(implicit ec: ExecutionContext) {
 
 
   def listProductResource(implicit mc: MarkerContext): Future[Iterable[ProductResource]] = {
@@ -79,7 +75,7 @@ class ProductResourceHandler @Inject()(productRepository: ProductRepository)(imp
   }
 
   private def createProductResource(p: ProductData): ProductResource = {
-    ProductResource(p.id, ManageTypeProduct.get(p.id_typeProduct).name, p.name, p.gender, p.size, p.price)
+    ProductResource(p.id, manageTypeProduct.get(p.id_typeProduct).name, p.name, p.gender, p.size, p.price)
   }
 
   private def createBasicProductResource(p: ProductData): BasicProductResource = {

@@ -16,9 +16,7 @@ case class ProductFormInput(id_product: Int, id_typeProduct: Int, name: String, 
 class ProductController @Inject()(cc: ProductControllerComponents)(implicit ec: ExecutionContext)
   extends ProductBaseController(cc) {
 
-
   private val logger = Logger(getClass)
-
 
   private val form: Form[ProductFormInput] = {
     import play.api.data.Forms._

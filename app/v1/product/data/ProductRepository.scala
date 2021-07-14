@@ -1,12 +1,12 @@
 package v1.product.data
 
 import akka.actor.ActorSystem
-import play.api.{Logger, MarkerContext}
-import play.api.libs.concurrent.CustomExecutionContext
 import cats.effect._
 import cats.implicits.catsSyntaxTuple2Semigroupal
 import doobie.Fragment
 import doobie.implicits._
+import play.api.libs.concurrent.CustomExecutionContext
+import play.api.{Logger, MarkerContext}
 
 import javax.inject.Inject
 import scala.concurrent.Future
@@ -15,8 +15,7 @@ case class ProductData(id: Int, id_typeProduct: Int, name: String, gender: Strin
 
 case class TypeProduct(id_typeProduct: Int, name: String)
 
-object ManageTypeProduct {
-  val connection = new Connection
+case class ManageTypeProduct @Inject()(connection: Connection) {
 
   def create(data: TypeProduct): doobie.Update0 = {
     sql"insert into typeProduct (id_typeProduct, name) values (${data.id_typeProduct},${data.name})".update
@@ -40,7 +39,6 @@ class ProductExecutionContext @Inject()(actorSystem: ActorSystem)
   * A pure non-blocking interface for the ProductRepository.
   */
 trait ProductRepository {
-
   def list()(implicit mc: MarkerContext): Future[Iterable[ProductData]]
 
   def get(id: Int)(implicit mc: MarkerContext): Future[Option[ProductData]]
@@ -48,16 +46,14 @@ trait ProductRepository {
   def create(data: ProductData)(implicit mc: MarkerContext): Future[Int]
 
   def delete(id: Int)(implicit mc: MarkerContext): Future[Iterable[ProductData]]
-
 }
 
-class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
+class ProductRepositoryImpl @Inject()()(connection: Connection)(implicit ec: ProductExecutionContext)
   extends ProductRepository {
 
-  val connection = new Connection
   private val logger = Logger(this.getClass)
 
-  lazy val startDataTable: Unit = {
+  val startDataTable: Unit = {
 
     val productList = List(
       ProductData(1, 1, "Shirt", "W", "M", 30.5),
@@ -78,9 +74,6 @@ class ProductRepositoryImpl @Inject()()(implicit ec: ProductExecutionContext)
     val l = connection.transactor.use((truncatedTable, startTable).mapN(_ + _).transact[IO]).unsafeRunSync()
     logger.trace(s"inserting initial rows(${l}):\n\t$inserts")
   }
-
-  val start = startDataTable
-
 
   override def list()(implicit mc: MarkerContext): Future[Iterable[ProductData]] = {
     Future {
