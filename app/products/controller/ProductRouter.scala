@@ -1,10 +1,10 @@
-package v1.product
-
-import javax.inject.Inject
+package products.controller
 
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
+
+import javax.inject.Inject
 
 /**
   * Routes and URLs to the ProductResource controller.

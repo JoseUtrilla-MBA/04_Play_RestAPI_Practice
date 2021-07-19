@@ -1,13 +1,13 @@
-package v1.product
-
-import javax.inject.Inject
+package products.controller
 
 import net.logstash.logback.marker.LogstashMarker
-import play.api.{Logger, MarkerContext}
 import play.api.http.{FileMimeTypes, HttpVerbs}
 import play.api.i18n.{Langs, MessagesApi}
 import play.api.mvc._
+import play.api.{Logger, MarkerContext}
+import products.services.ProductService
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -94,7 +94,7 @@ class ProductActionBuilder @Inject()(messagesApi: MessagesApi,
   */
 case class ProductControllerComponents @Inject()(
                                                   productActionBuilder: ProductActionBuilder,
-                                                  productResourceHandler: ProductResourceHandler,
+                                                  productService: ProductService,
                                                   actionBuilder: DefaultActionBuilder,
                                                   parsers: PlayBodyParsers,
                                                   messagesApi: MessagesApi,
@@ -113,5 +113,5 @@ class ProductBaseController @Inject()(pcc: ProductControllerComponents)
 
   def ProductAction: ProductActionBuilder = pcc.productActionBuilder
 
-  def ProductResourceHandler: ProductResourceHandler = pcc.productResourceHandler
+  def ProductService: ProductService = pcc.productService
 }

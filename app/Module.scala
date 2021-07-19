@@ -1,7 +1,7 @@
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.ScalaModule
 import play.api.{Configuration, Environment}
-import v1.product.data.{ProductRepository, ProductRepositoryImpl}
+import products.data.repositories.{ProductRepository, ProductRepositoryImpl}
 
 import javax.inject._
 
