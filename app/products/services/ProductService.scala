@@ -1,48 +1,40 @@
 package products.services
 
-import play.api.MarkerContext
-import products.controller.ProductFormInput
 import products.data.repositories._
 import products.models.ProductResource
+
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Controls access to the backend data, returning [[ProductResource]]
   */
-class ProductService @Inject()(typeProductRepository: TypeProductRepository,
+class ProductService @Inject()(typeProductRepository: TypeProductRepositoryImpl,
                                productRepository: ProductRepository,
                               )(implicit ec: ExecutionContext) {
 
-  def listProductResource(implicit mc: MarkerContext): Future[List[ProductResource]] = {
-    Future(productRepository.list().map(productData => createProductResource(productData)))
+  def listProductResource: Future[List[ProductResource]] = {
+    Future(productRepository.list().map(productData => ProductResource.fromData(productData)))
   }
 
-  def lookupProduct(id: String)(implicit mc: MarkerContext): Future[Option[ProductResource]] = {
+  def lookupProduct(id: String): Future[Option[ProductResource]] =
     Future {
-      productRepository.get(id.toInt).map(p => createProductResource(p))
+      productRepository.get(id.toInt).map(productData => ProductResource.fromData(productData))
     } recover {
-      case e: Exception => null
+      case e: Exception => productRepository.get(0)
+        .map(productData => ProductResource.fromData(productData))
     }
+
+  def insertService(p: ProductResource): String = {
+    val data = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProduct()),
+      p.name, p.gender, p.size, p.price)
+    productRepository.insert(data)
   }
 
-  def create(productInput: ProductFormInput)(implicit mc: MarkerContext): Future[ProductResource] = {
-    Future {
-      val data = ProductData(productInput.id_product, (productInput.id_typeProduct),
-        productInput.name, productInput.gender, productInput.size, productInput.price)
-      productRepository.create(data)
-      createProductResource(data)
-    }
-  }
-
-  private def createProductResource(p: ProductData): ProductResource = {
-    ProductResource(p.id, typeProductRepository.get(p.idTypeProduct).get.name, p.name, p.gender, p.size, p.price)
-  }
-
-  def remove(id: String)(implicit mc: MarkerContext): Future[List[ProductResource]] = Future {
-    val toDelete = productRepository.delete(id.toInt)
-    productRepository.list().map(productData => createProductResource(productData))
-  } recover {
-    case e: Exception => productRepository.list().map(productData => createProductResource(productData))
+  def remove(id: String): Future[String] = Future {
+     productRepository.delete(id.toInt)
+  }recover {
+    case ne: NumberFormatException => "you must insert a natural number as Id"
+    case e: Exception => productRepository.delete(0)
   }
 }

@@ -13,13 +13,16 @@ lazy val root = (project in file("."))
       "io.lemonlabs" %% "scala-uri" % "1.5.1",
       "net.codingwell" %% "scala-guice" % "4.2.6",
       "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
+      "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.39.5" % "test",
+      "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.39.5" % "test",
 
-      "org.tpolecat" %% "doobie-core"      % "0.12.1",
-      "org.tpolecat" %% "doobie-hikari"    % "0.12.1",          // HikariCP transactor.
-      "org.tpolecat" %% "doobie-postgres"  % "0.12.1",          // Postgres driver 42.2.19 + type mappings.
-      "org.tpolecat" %% "doobie-specs2"    % "0.12.1" % "test", // Specs2 support for typechecking statements.
+      "org.tpolecat" %% "doobie-core" % "0.12.1",
+      "org.tpolecat" %% "doobie-hikari" % "0.12.1", // HikariCP transactor.
+      "org.tpolecat" %% "doobie-postgres" % "0.12.1", // Postgres driver 42.2.19 + type mappings.
+      "org.tpolecat" %% "doobie-specs2" % "0.12.1" % "test", // Specs2 support for typechecking statements.
 
     ),
+    Test / fork := true,
     scalacOptions ++= Seq(
       "-feature",
       "-deprecation",

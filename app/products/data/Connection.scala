@@ -4,7 +4,6 @@ import cats.effect.{Blocker, IO, Resource}
 import doobie.hikari._
 import doobie.util.ExecutionContexts
 import play.api.Configuration
-
 import javax.inject.Inject
 
 class Connection @Inject()(configuration: Configuration) {

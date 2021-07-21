@@ -1,16 +1,13 @@
 package products.data.repositories
 
-import play.api.MarkerContext
-import products.controller.RequestMarkerContext
+trait Repository[T] {
 
-trait Repository  [T] extends RequestMarkerContext {
+  def list(): List[T]
 
-  def list()(implicit mc: MarkerContext): List[T]
+  def get(id: Int): Option[T]
 
-  def get(id: Int)(implicit mc: MarkerContext): Option[T]
+  def insert(data: T): String
 
-  def create(data: T)(implicit mc: MarkerContext): Int
-
-  def delete(id: Int)(implicit mc: MarkerContext): List[T]
+  def delete(id: Int): String
 
 }

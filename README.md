@@ -30,19 +30,19 @@ http --verbose http://localhost:9000/products/delete/"id"    --> this request wi
 and get back:
 
 ```routes
-GET /v1/posts HTTP/1.1
+GET /products HTTP/1.1
 ```
 
 Likewise, you can also send a POST directly as JSON:
 
 ```bash
-http --verbose POST http://localhost:9000/products id_product="7" id_typeProduct="1" name="pants" gender="M" size="40" price="35.50"
+http --verbose POST http://localhost:9000/products id:=7 typeProductName="Clothes" name="pants" gender="M" size="40" price:=35.50
 ```
 
 and get:
 
 ```routes
-POST /v1/posts HTTP/1.1
+POST /products HTTP/1.1
 ```
 
 

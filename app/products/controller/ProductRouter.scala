@@ -11,7 +11,6 @@ import javax.inject.Inject
   */
 class ProductRouter @Inject()(controller: ProductController) extends SimpleRouter {
 
-
   override def routes: Routes = {
 
     /**
@@ -55,7 +54,7 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
       * the controller's process() method will insert a new record or update an existing one, in our database.
       */
     case POST(p"/") =>
-      controller.process
+      controller.add
   }
 
 }

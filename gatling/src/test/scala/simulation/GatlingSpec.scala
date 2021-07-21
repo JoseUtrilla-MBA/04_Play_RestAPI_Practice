@@ -13,7 +13,7 @@ class GatlingSpec extends Simulation {
 
   // change this to another machine, make sure you have Play running in producion mode
   // i.e. sbt stage / sbt dist and running the script
-  val httpConf: HttpProtocolBuilder = http.baseUrl("http://localhost:9000/v1/products")
+  val httpConf: HttpProtocolBuilder = http.baseUrl("http://localhost:9000/products")
 
   val indexReq = repeat(500) {
     exec(
