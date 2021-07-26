@@ -53,24 +53,45 @@ class ProductController @Inject()(cc: ControllerComponents,
 
   def add: Action[JsValue] = Action.async(parse.json) { implicit request =>
     logger.trace("add:")
+    val toUpdate = request.headers.get("Raw-Request-URI") match {
+      case Some(value) if value == "/products/?toUpdate=true" => true
+      case _ => false
+    } // to set the value, we don't take the param, just compare the Request-URI header
+    val whatToDo = if (toUpdate)"add to update" else "add to insert"
+    logger.trace(whatToDo)
     Future {
       val productResource = request.body.validate[ProductResource]
-      productResource.fold(
-        errors => {
-          BadRequest(Json.obj("message" -> JsError.toJson(errors)))
-        },
-        p => {
-          val str = productService.insertService(p)
-          Ok(Json.obj("message" -> s"new product '${p.name}' $str"))
+      productResource.isError match {
+        case true => {
+          val listProductResource = request.body.validate[List[ProductResource]]
+          listProductResource.fold(
+            errors => {
+              BadRequest(Json.obj("message" -> JsError.toJson(errors)))
+            },
+            p => {
+              val n = productService.insertService(p, toUpdate)
+              Ok(Json.toJson(n))
+            }
+          )
         }
-      )
+        case false =>
+          productResource.fold(
+            errors => {
+              BadRequest(Json.obj("message" -> JsError.toJson(errors)))
+            },
+            p => {
+              val str = productService.insertService(p, toUpdate)
+              Ok(Json.toJson(str))
+            }
+          )
+      }
     }
   }
 
   def delete(id: String): Action[AnyContent] = Action.async { implicit request =>
     logger.trace(s"delete: id = $id")
     productService.remove(id).map { message =>
-      Ok(Json.obj("message" -> s" $message"))
+      Ok(Json.toJson(message))
     }
   }
 

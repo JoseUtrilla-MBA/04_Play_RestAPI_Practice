@@ -1,6 +1,7 @@
 package products.services
 
 import products.data.repositories._
+import products.data.resource._
 import products.models.ProductResource
 
 import javax.inject.Inject
@@ -25,16 +26,34 @@ class ProductService @Inject()(typeProductRepository: TypeProductRepositoryImpl,
         .map(productData => ProductResource.fromData(productData))
     }
 
-  def insertService(p: ProductResource): String = {
+  def insertService(p: ProductResource, toUpdate: Boolean): Report = {
     val data = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProduct()),
       p.name, p.gender, p.size, p.price)
-    productRepository.insert(data)
+    toUpdate match {
+      case true => {
+        productRepository.update(data)
+      }
+      case _ => productRepository.insert(data)
+    }
   }
 
-  def remove(id: String): Future[String] = Future {
-     productRepository.delete(id.toInt)
-  }recover {
-    case ne: NumberFormatException => "you must insert a natural number as Id"
+  def insertService(ps: List[ProductResource], toUpdate: Boolean): Report = {
+    def toData(p: ProductResource) = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProduct()),
+      p.name, p.gender, p.size, p.price)
+
+    val data = ps.map(pr => toData(pr))
+    toUpdate match {
+      case true => {
+        productRepository.update(data)
+      }
+      case _ => productRepository.insert(data)
+    }
+  }
+
+  def remove(id: String): Future[Report] = Future {
+    productRepository.delete(id.toInt)
+  } recover {
+    case ne: NumberFormatException => Report("delete",1,0,1,Map("numeric value not introduced" -> List()))
     case e: Exception => productRepository.delete(0)
   }
 }

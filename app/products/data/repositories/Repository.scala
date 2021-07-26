@@ -1,13 +1,21 @@
 package products.data.repositories
 
+import products.data.resource.Report
+
 trait Repository[T] {
 
   def list(): List[T]
 
   def get(id: Int): Option[T]
 
-  def insert(data: T): String
+  def insert(data: T): Report
 
-  def delete(id: Int): String
+  def insert(data: List[T]): Report
+
+  def update(data: T): Report
+
+  def update(data: List[T]): Report
+
+  def delete(id: Int): Report
 
 }
