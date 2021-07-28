@@ -1,9 +1,6 @@
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.ScalaModule
 import play.api.{Configuration, Environment}
-import products.data.repositories._
-
-import javax.inject._
 
 /**
   * Sets up custom components for Play.
@@ -12,10 +9,5 @@ import javax.inject._
   */
 class Module(environment: Environment, configuration: Configuration)
     extends AbstractModule
-    with ScalaModule {
+    with ScalaModule
 
-  override def configure() = {
-    bind[ProductRepository].to[ProductRepositoryImpl].in[Singleton]()
-    bind[TypeProductRepository].to[TypeProductRepositoryImpl].in[Singleton]()
-  }
-}

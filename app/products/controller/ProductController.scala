@@ -1,19 +1,27 @@
 package products.controller
 
+import cats.effect.{IO, Resource}
+import doobie.hikari.HikariTransactor
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
+import products.data.PoolConnection
+import products.data.repositories.{ProductRepositoryImpl, TypeProductRepositoryImpl}
 import products.models._
 import products.services.ProductService
+
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class ProductController @Inject()(cc: ControllerComponents,
-                                  productService: ProductService)
+case class ProductController @Inject()(cc: ControllerComponents)
                                  (implicit ec: ExecutionContext)
   extends AbstractController(cc) {
 
+  val transactor: Resource[IO, HikariTransactor[IO]]=PoolConnection.transactor
+  val productRepository=  ProductRepositoryImpl(transactor)
+  val typeProductRepository=  TypeProductRepositoryImpl(transactor)
+  val productService = ProductService (productRepository,typeProductRepository)
   private val logger = Logger(this.getClass)
 
   def productList: Action[AnyContent] = Action.async { implicit request =>
@@ -57,7 +65,7 @@ class ProductController @Inject()(cc: ControllerComponents,
       case Some(value) if value == "/products/?toUpdate=true" => true
       case _ => false
     } // to set the value, we don't take the param, just compare the Request-URI header
-    val whatToDo = if (toUpdate)"add to update" else "add to insert"
+    val whatToDo = if (toUpdate) "add to update" else "add to insert"
     logger.trace(whatToDo)
     Future {
       val productResource = request.body.validate[ProductResource]
@@ -69,7 +77,7 @@ class ProductController @Inject()(cc: ControllerComponents,
               BadRequest(Json.obj("message" -> JsError.toJson(errors)))
             },
             p => {
-              val n = productService.insertService(p, toUpdate)
+              val n = productService.insertProducts(p, toUpdate)
               Ok(Json.toJson(n))
             }
           )
@@ -80,7 +88,7 @@ class ProductController @Inject()(cc: ControllerComponents,
               BadRequest(Json.obj("message" -> JsError.toJson(errors)))
             },
             p => {
-              val str = productService.insertService(p, toUpdate)
+              val str = productService.insert(p, toUpdate)
               Ok(Json.toJson(str))
             }
           )

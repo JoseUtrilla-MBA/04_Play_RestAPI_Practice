@@ -8,6 +8,8 @@ trait Repository[T] {
 
   def get(id: Int): Option[T]
 
+  def getByName(name: String): Option[T]
+
   def insert(data: T): Report
 
   def insert(data: List[T]): Report

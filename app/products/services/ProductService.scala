@@ -4,15 +4,14 @@ import products.data.repositories._
 import products.data.resource._
 import products.models.ProductResource
 
-import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Controls access to the backend data, returning [[ProductResource]]
   */
-class ProductService @Inject()(typeProductRepository: TypeProductRepositoryImpl,
-                               productRepository: ProductRepository,
-                              )(implicit ec: ExecutionContext) {
+case class ProductService(productRepository: ProductRepository,
+                     typeProductRepository: TypeProductRepository)
+                    (implicit ec: ExecutionContext) {
 
   def listProductResource: Future[List[ProductResource]] = {
     Future(productRepository.list().map(productData => ProductResource.fromData(productData)))
@@ -26,8 +25,8 @@ class ProductService @Inject()(typeProductRepository: TypeProductRepositoryImpl,
         .map(productData => ProductResource.fromData(productData))
     }
 
-  def insertService(p: ProductResource, toUpdate: Boolean): Report = {
-    val data = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProduct()),
+  def insert(p: ProductResource, toUpdate: Boolean): Report = {
+    val data = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProductData()),
       p.name, p.gender, p.size, p.price)
     toUpdate match {
       case true => {
@@ -37,16 +36,16 @@ class ProductService @Inject()(typeProductRepository: TypeProductRepositoryImpl,
     }
   }
 
-  def insertService(ps: List[ProductResource], toUpdate: Boolean): Report = {
-    def toData(p: ProductResource) = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProduct()),
+  def insertProducts(ps: List[ProductResource], toUpdate: Boolean): Report = {
+    def toData(p: ProductResource) = ProductData(p.id, typeProductRepository.getByName(p.typeProductName).getOrElse(TypeProductData()),
       p.name, p.gender, p.size, p.price)
 
-    val data = ps.map(pr => toData(pr))
+    val productDataList = ps.map(pr => toData(pr))
     toUpdate match {
       case true => {
-        productRepository.update(data)
+        productRepository.update(productDataList)
       }
-      case _ => productRepository.insert(data)
+      case _ => productRepository.insert(productDataList)
     }
   }
 
