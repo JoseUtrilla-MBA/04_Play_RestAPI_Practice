@@ -1,106 +1,91 @@
 package products.controller
 
-import cats.effect.{IO, Resource}
-import doobie.hikari.HikariTransactor
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
-import products.data.PoolConnection
-import products.data.repositories.{ProductRepositoryImpl, TypeProductRepositoryImpl}
 import products.models._
-import products.services.ProductService
-
+import products.controller.resource.defaultProductService.productService
+import products.data.resource.Report
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 case class ProductController @Inject()(cc: ControllerComponents)
-                                 (implicit ec: ExecutionContext)
+                                      (implicit ec: ExecutionContext)
   extends AbstractController(cc) {
 
-  val transactor: Resource[IO, HikariTransactor[IO]]=PoolConnection.transactor
-  val productRepository=  ProductRepositoryImpl(transactor)
-  val typeProductRepository=  TypeProductRepositoryImpl(transactor)
-  val productService = ProductService (productRepository,typeProductRepository)
   private val logger = Logger(this.getClass)
 
-  def productList: Action[AnyContent] = Action.async { implicit request =>
+  def showProducts(typeProduct: String = ""): Action[AnyContent] = Action.async { implicit request =>
     logger.trace("productList:")
-    productService.listProductResource.map { products =>
-      Ok(Json.toJson(products))
-    }
-  }
 
-  def basicProductList: Action[AnyContent] = Action.async { implicit request =>
-    logger.trace("basicProductList:")
-    productService.listProductResource.map { products =>
-      val basicProducts = products.map(product => BasicProductResource(product.name, product.price))
-      Ok(Json.toJson(basicProducts))
-    }
-  }
-
-  def showProduct(id: String): Action[AnyContent] = Action.async {
-    implicit request =>
-      logger.trace(s"showProduct: id = $id")
-      productService.lookupProduct(id).map { product =>
-        Ok(Json.toJson(product))
-      }
-  }
-
-  def showBasicProduct(id: String): Action[AnyContent] = Action.async {
-    implicit request =>
-      logger.trace(s"showBasicProduct: id = $id")
-      productService.lookupProduct(id).map { product =>
-        val basicProduct = product match {
-          case Some(value) => BasicProductResource(value.name, value.price)
-          case None => null
+    productService.getProducts.map { products =>
+      typeProduct match {
+        case "" => Ok(Json.toJson(products))
+        case "basic" => {
+          val basicProducts = products.map(product => BasicProductResource(product.name, product.price))
+          Ok(Json.toJson(basicProducts))
         }
-        Ok(Json.toJson(Option(basicProduct)))
       }
+    }
   }
 
-  def add: Action[JsValue] = Action.async(parse.json) { implicit request =>
+  def showProduct(idAndType: String): Action[AnyContent] = Action.async { implicit request =>
+    val id = idAndType.substring(0,
+      if (idAndType.contains('/')) idAndType.indexOf('/')
+      else idAndType.length)
+
+    logger.trace(s"showProduct: id = $id")
+
+    productService.getProduct(id).map { product =>
+      idAndType match {
+
+        case str if !str.contains("/") => Ok(Json.toJson(product))
+        case str if str == s"$id/basic" => {
+          val basicProduct = product.map(product => BasicProductResource(product.name, product.price))
+          Ok(Json.toJson(basicProduct))
+        }
+      }
+    }
+  }
+
+  def process: Action[JsValue] = Action.async(parse.json) { implicit request =>
     logger.trace("add:")
-    val toUpdate = request.headers.get("Raw-Request-URI") match {
-      case Some(value) if value == "/products/?toUpdate=true" => true
-      case _ => false
-    } // to set the value, we don't take the param, just compare the Request-URI header
-    val whatToDo = if (toUpdate) "add to update" else "add to insert"
-    logger.trace(whatToDo)
-    Future {
-      val productResource = request.body.validate[ProductResource]
-      productResource.isError match {
-        case true => {
-          val listProductResource = request.body.validate[List[ProductResource]]
-          listProductResource.fold(
-            errors => {
-              BadRequest(Json.obj("message" -> JsError.toJson(errors)))
-            },
-            p => {
-              val n = productService.insertProducts(p, toUpdate)
-              Ok(Json.toJson(n))
-            }
-          )
+
+    val productsToProcess = request.body.validate[ProductsToProcess]
+    productsToProcess.fold(
+
+      errors => Future(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
+      ,
+      productsToProcess => {
+
+        val typeProcess = productsToProcess.typeProcess
+
+        typeProcess match {
+
+          case "insert" => productService.insertProducts(productsToProcess.products).map(report =>
+            Ok(Json.toJson(report)))
+
+          case "update" => productService.updateProducts(productsToProcess.products).map(report =>
+            Ok(Json.toJson(report)))
+
+          case _ => Future {
+            val report = Report(typeProcess, productsToProcess.products.length, 0,
+              productsToProcess.products.length, Map(
+                s"""ERROR: tipo de proceso no especificado o es incorrecto <<typeProcess>>.
+                   | Detail: tipo introducido: '$typeProcess', tipos habilitados: 'insert', 'update'."""
+                  .stripMargin -> productsToProcess.products.map(product => product.id)))
+
+            Ok(Json.toJson(report))
+          }
         }
-        case false =>
-          productResource.fold(
-            errors => {
-              BadRequest(Json.obj("message" -> JsError.toJson(errors)))
-            },
-            p => {
-              val str = productService.insert(p, toUpdate)
-              Ok(Json.toJson(str))
-            }
-          )
-      }
-    }
+      })
   }
 
   def delete(id: String): Action[AnyContent] = Action.async { implicit request =>
     logger.trace(s"delete: id = $id")
-    productService.remove(id).map { message =>
-      Ok(Json.toJson(message))
-    }
+
+    productService.removeProduct(id).map(message => Ok(Json.toJson(message)))
   }
 
 }

@@ -18,14 +18,14 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
       * When this program is started for the first time, initial records are set in the database.
       */
     case GET(p"/") =>
-      controller.productList
+      controller.showProducts()
 
     /**
       * GET(p"/basic") request is routed to the controller method: productList(), which lists all the products in our database
       * as a basic type format.
       */
     case GET(p"/basic") =>
-      controller.basicProductList
+      controller.showProducts("basic")
 
     /**
       * GET(p"/delete/$id") request is routed to the controller method: delete(id), which delete a record from database,
@@ -47,14 +47,14 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
       * this method gets a record from database in basic type format, which is selected previously by its id.
       */
     case GET(p"/$id/basic") =>
-      controller.showBasicProduct(id)
+      controller.showProduct(s"$id/basic")
 
     /**
       * POST(p"/") request is routed to the controller method: process(),
       * the controller's process() method will insert a new record or update an existing one, in our database.
       */
     case POST(p"/") =>
-      controller.add
+      controller.process
   }
 
 }

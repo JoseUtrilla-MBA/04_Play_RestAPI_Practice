@@ -8,13 +8,19 @@ case class ProductResource(id: Int, typeProductName: String, name: String,
 
 object ProductResource {
   def fromData(p: ProductData): ProductResource = ProductResource(p.id, p.typeProduct.name, p.name, p.gender, p.size, p.price)
+
   implicit val format: Format[ProductResource] = Json.format
   implicit val readJson: Reads[ProductResource] = Json.reads
 }
-
 
 case class BasicProductResource(name: String, price: Double)
 
 object BasicProductResource {
   implicit val format: Format[BasicProductResource] = Json.format
+}
+
+case class ProductsToProcess(typeProcess: String, products: List[ProductResource])
+
+object ProductsToProcess {
+  implicit val format: Format[ProductsToProcess] = Json.format
 }
