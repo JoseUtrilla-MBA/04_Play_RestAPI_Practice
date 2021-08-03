@@ -7,30 +7,7 @@ import products.models.{ProductResource, ProductsToProcess}
 
 class ReportSpec extends AnyFlatSpec {
 
-  //setReportFromValidationError method test
-
-  "setReportFromValidationError method" should
-    "translate errors from 'play.api.libs.json,JsValue.validate' to a Report instance" in {
-    val productsResourceValidated = jsonProductsToProcessWithErrors.validate[ProductsToProcess]
-    productsResourceValidated.fold(
-      errors => {
-        println(errors.head._1.toString())
-        val report = setReportFromValidationError(errors)
-        println(report.idsFailure.head._1)
-        val reportMessage = report.idsFailure.head._1.contains("TypeFieldError.path.missing")
-        val errorPath = errors.head._1.toString().contains("/products(0)")
-        val errorMessages = errors.head._2.head.messages.head.contains("error.path.missing")
-
-        assert(reportMessage && errorPath && errorMessages)
-      },
-      _ => false)
-  }
-
-
-
-
   //RESOURCES______________________________________________________________________________________________________
-  //_______________________________________________________________________________________________________________
 
   //case class not available by setReportFromValidationError method__________________
   case class ErrorProductsToProcess(typeProcess: String, products: List[(Int, Int, String, String, String, Double)])
@@ -50,7 +27,27 @@ class ReportSpec extends AnyFlatSpec {
 
   val jsonProductsToProcessWithErrors: JsValue = Json.toJson(productsToProcessWithErrors)
   val jsonProductsResource: JsValue = Json.toJson(correctProductResource)
+  //setReportFromValidationError method test
 
+
+
+
+  //TESTING_______________________________________________________________________________________________________
+
+  "setReportFromValidationError method" should
+    "translate errors from 'play.api.libs.json,JsValue.validate' to a Report instance" in {
+    val productsResourceValidated = jsonProductsToProcessWithErrors.validate[ProductsToProcess]
+    productsResourceValidated.fold(
+      errors => {
+        val report = setReportFromValidationError(errors)
+        val reportMessage = report.idsFailure.head._1.contains("TypeFieldError.path.missing")
+        val errorPath = errors.head._1.toString().contains("/products(0)")
+        val errorMessages = errors.head._2.head.messages.head.contains("error.path.missing")
+
+        assert(reportMessage && errorPath && errorMessages)
+      },
+      _ => false)
+  }
 
 }
 
