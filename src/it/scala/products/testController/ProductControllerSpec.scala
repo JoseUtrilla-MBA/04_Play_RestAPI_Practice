@@ -12,7 +12,6 @@ import products.controller.resource.GetProductService
 import products.data.testRepositories.createRepositories
 import products.dataTest.GetConnection
 import products.models.{ProductResource, ProductsToProcess}
-
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps

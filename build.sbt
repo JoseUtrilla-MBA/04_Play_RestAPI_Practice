@@ -5,6 +5,7 @@ lazy val root = (project in file("."))
   .configs(IntegrationTest)
   .settings(
     Defaults.itSettings,
+    Test / scalaSource := baseDirectory.value / "it-src",
     name := "ProductsRestAPI",
     version := "1.0",
     scalaVersion := "2.13.6",
