@@ -5,8 +5,10 @@ import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import products.controller.resource.GetProductService._
+import products.data.PoolConnection
 import products.data.resource.Report
 import products.models._
+
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
@@ -20,9 +22,10 @@ case class ProductController @Inject()(cc: ControllerComponents)
   def showProducts(typeProduct: String = ""): Action[AnyContent] =
     Action.async { implicit request =>
       logger.trace("productList:")
-      val testConnection = Either.catchNonFatal(request.attrs(connectionKey))
+      val productService =
+        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
-      productService(testConnection).getProducts.map { products =>
+      productService.getProducts.map { products =>
         typeProduct match {
           case "" => Ok(Json.toJson(products))
           case "basic" => {
@@ -39,9 +42,10 @@ case class ProductController @Inject()(cc: ControllerComponents)
       else idAndType.length)
 
     logger.trace(s"showProduct: id = $id")
-    val testConnection = Either.catchNonFatal(request.attrs(connectionKey))
+    val productService =
+        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
-    productService(testConnection).getProduct(id).map { product =>
+    productService.getProduct(id).map { product =>
       idAndType match {
 
         case str if !str.contains("/") => Ok(Json.toJson(product))
@@ -55,8 +59,9 @@ case class ProductController @Inject()(cc: ControllerComponents)
 
   def process: Action[JsValue] = Action.async(parse.json) { implicit request =>
     logger.trace("add:")
-    val testConnection = Either.catchNonFatal(request.attrs(connectionKey))
-    val prService = productService(testConnection)
+    val productService =
+        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
+
     val productsToProcess = request.body.validate[ProductsToProcess]
     productsToProcess.fold(
       errors => Future(BadRequest(Json.toJson(Report.setReportFromValidationError(errors))))
@@ -65,10 +70,10 @@ case class ProductController @Inject()(cc: ControllerComponents)
         val typeProcess = productsToProcess.typeProcess
 
         typeProcess match {
-          case "insert" => prService.insertProducts(productsToProcess.products).map(report =>
+          case "insert" => productService.insertProducts(productsToProcess.products).map(report =>
             Ok(Json.toJson(report)))
 
-          case "update" => prService.updateProducts(productsToProcess.products).map(report =>
+          case "update" => productService.updateProducts(productsToProcess.products).map(report =>
             Ok(Json.toJson(report)))
 
           case _ => Future {
@@ -86,9 +91,10 @@ case class ProductController @Inject()(cc: ControllerComponents)
 
   def delete(id: String): Action[AnyContent] = Action.async { implicit request =>
     logger.trace(s"delete: id = $id")
-    val testConnection = Either.catchNonFatal(request.attrs(connectionKey))
+    val productService =
+        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
-    productService(testConnection).removeProduct(id).map(message => Ok(Json.toJson(message)))
+    productService.removeProduct(id).map(message => Ok(Json.toJson(message)))
   }
 
 }

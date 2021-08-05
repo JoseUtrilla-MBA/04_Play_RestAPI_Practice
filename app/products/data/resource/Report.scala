@@ -26,7 +26,7 @@ object Report {
             message <- jsonValidationError.messages
           } yield (Option(id.toInt).getOrElse(999999), "ERROR: TypeFieldE"
             + message.substring(1) + " in Path: "
-            + pathString.replace(id, "index") + ". DETAIL: indexes")
+            + pathString.replace("(" + id + ")", "") + ". DETAIL: indexes")
         }.toList
         errorsString
       }
