@@ -8,6 +8,9 @@ import doobie.implicits._
 import play.api.Logger
 import products.data.resource.Report
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 case class ProductData(id: Int, typeProduct: TypeProductData, name: String, gender: String, size: String, price: Double) {
   override def toString: String =
     s"id: $id, idTypeProduct ${typeProduct.id_typeProduct}, typeProductName: ${typeProduct.name}, name: $name, gender:" +
@@ -18,90 +21,98 @@ case class ProductRepository(transactor: Resource[IO, HikariTransactor[IO]]) ext
 
   private val logger = Logger(this.getClass)
 
-  val typeProductRepository: Repository[TypeProductData] = TypeProductRepository(transactor)
-  implicit val GetTypeProduct: Get[TypeProductData] = Get[Int].tmap(n => typeProductRepository.get(n).getOrElse(TypeProductData()))
+  val typeProductRepository: TypeProductRepository = TypeProductRepositoryImpl(transactor)
+
+  implicit val GetTypeProduct: Get[TypeProductData] =
+    Get[Int].tmap(n => typeProductRepository.Get(n).getOrElse(TypeProductData()))
+
   implicit val putTypeProduct: Put[TypeProductData] = Put[Int].tcontramap(n => n.id_typeProduct)
 
-  override def getList: List[ProductData] = {
-    logger.trace("list:")
+  override def getList: Future[List[ProductData]] = {
+    logger.trace("getList:")
 
     val productList = sql"select * from product".query[ProductData].to[List]
-    transactor.use(productList.transact[IO]).unsafeRunSync()
+    transactor.use(productList.transact[IO]).unsafeToFuture()
   }
 
-  override def get(id: Int): Option[ProductData] = {
+  override def get(id: Int): Future[Option[ProductData]] = {
     logger.trace(s"get: id = $id")
 
     val productById = sql"select * from product where id_product = $id".query[ProductData].option
-    transactor.use(productById.transact[IO]).unsafeRunSync()
+    transactor.use(productById.transact[IO]).unsafeToFuture()
   }
 
-  override def getByName(name: String): Option[ProductData] = ???
+  override def getByName(name: String): Future[Option[ProductData]] = ???
 
-  override def insert(products: List[ProductData]): Report = {
-    logger.trace(s"insert: dataList within ${products.length} elements")
+  override def insert(products: List[ProductData]): Future[Report] = {
+    logger.trace(s"insert: products with ${products.length} elements")
 
     def getConnection(product: ProductData): doobie.ConnectionIO[Int] =
       sql"""insert into product (id_product, id_typeProduct, name, gender, size, price)
            values (${product.id},${product.typeProduct.id_typeProduct}, ${product.name},
            ${product.gender},${product.size},${product.price})""".update.run
 
-    val idsResult = (for {
+    val idsResultFuture = (for {
       product <- products
     } yield {
-      def idResult: Either[Throwable, Int] = Either.catchNonFatal(transactor.use(getConnection(product).transact[IO]).unsafeRunSync())
-
-      idResult match {
-        case Right(n) if n == 1 => (1, product.id, "Success")
-        case Right(_) => (0, product.id, "undefined error")
-        case Left(e) => (0, product.id, e.getMessage)
+      transactor.use(getConnection(product).transact[IO]).unsafeToFuture().map { n =>
+        if (n > 0) (1, product.id, "Success") else (0, product.id, "undefined error")
+      } recover {
+        case e: Throwable => (0, product.id, e.getMessage)
       }
-    }).groupMap(_._1)(e => (e._2, e._3))
+    }).sequence.map(anything => anything.groupMap(_._1)(e => (e._3, e._2)))
 
-    val idsSuccess = idsResult.getOrElse(1, Nil)
+    idsResultFuture.map { idsResult =>
 
-    idsResult.get(0) match {
-      case Some(list) =>
-        Report("insert", products.length, idsSuccess.length, list.length, list.groupMap(_._2)(_._1))
-      case None => Report("insert", products.length, idsSuccess.length, 0, Map())
+      val idsSuccess = idsResult.getOrElse(1, Nil)
+
+      idsResult.get(0) match {
+        case Some(list) =>
+          Report("insert", products.length, idsSuccess.length, list.length, list.groupMap(_._1)(_._2))
+        case None => Report("insert", products.length, idsSuccess.length, 0, Map())
+      }
     }
   }
 
-  override def update(products: List[ProductData]): Report = {
-    logger.trace(s"update: dataList within ${products.length} elements")
+  override def update(products: List[ProductData]): Future[Report] = {
+    logger.trace(s"update: products with ${
+      products.length
+    } elements")
 
     def getConnection(product: ProductData): doobie.ConnectionIO[Int] =
-      sql"""update product set id_typeProduct= ${product.typeProduct.id_typeProduct},
-           name= ${product.name}, gender= ${product.gender}, size= ${product.size},
-           price= ${product.price} where id_product= ${product.id}""".update.run
+      sql"""update product set id_typeProduct= ${product.typeProduct.id_typeProduct}, name= ${product.name}, gender= ${product.gender}
+           , size= ${product.size}, price= ${product.price} where id_product= ${product.id}""".update.run
 
-    val idsResult = (for {
+    val idsResultFuture = (for {
       product <- products
     } yield {
-      def idResult: Either[Throwable, Int] = Either.catchNonFatal(transactor.use(getConnection(product).transact[IO]).unsafeRunSync())
-
-      idResult match {
-        case Right(n) if n == 1 => (1, product.id, "Success")
-        case Right(_) => (0, product.id, "undefined error, possibly this product is not in database")
-        case Left(e) => (0, product.id, e.getMessage)
+      transactor.use(getConnection(product).transact[IO]).unsafeToFuture().map { n =>
+        if (n > 0) (1, product.id, "Success")
+        else (0, product.id, "undefined error, possibly this typeProduct is not in database")
+      } recover {
+        case e: Throwable => (0, product.id, e.getMessage)
       }
-    }).groupMap(_._1)(e => (e._2, e._3))
+    }).sequence.map(anything => anything.groupMap(_._1)(e => (e._3, e._2)))
 
-    val idsSuccess = idsResult.getOrElse(1, Nil)
+    idsResultFuture.map { idsResult =>
 
-    idsResult.get(0) match {
-      case Some(list) =>
-        Report("update", products.length, idsSuccess.length, list.length, list.groupMap(_._2)(_._1))
-      case None => Report("update", products.length, idsSuccess.length, 0, Map())
+      val idsSuccess = idsResult.getOrElse(1, Nil)
+
+      idsResult.get(0) match {
+        case Some(list) =>
+          Report("update", products.length, idsSuccess.length, list.length, list.groupMap(_._1)(_._2))
+        case None => Report("update", products.length, idsSuccess.length, 0, Map())
+      }
     }
   }
 
-  override def delete(id: Int): Report = {
+  override def delete(id: Int): Future[Report] = {
     logger.trace(s"delete: id = $id")
-    val deleted = sql"delete from product where id_product = $id".update.run
 
-    val nRowsDeleted = Either.catchNonFatal(transactor.use(deleted.transact[IO]).unsafeRunSync())
-    nRowsDeleted match {
+    val deleted = sql"delete from product where id_product = $id".update.run
+    val nRowsDeletedFuture = Either.catchNonFatal(transactor.use(deleted.transact[IO]).unsafeToFuture()).sequence
+
+    nRowsDeletedFuture.map {
       case Right(n) if n == 1 => Report("delete", 1, 1)
       case Right(_) => Report("delete", 1, 0, 1, Map("undefined reason, " +
         "possibly no longer in this database" -> List(id)))

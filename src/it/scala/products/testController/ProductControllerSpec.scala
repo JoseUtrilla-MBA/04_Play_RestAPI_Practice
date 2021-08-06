@@ -17,7 +17,7 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 
 class ProductControllerSpec extends PlaySpec
-  with GuiceOneAppPerTest
+  with GuiceOneAppPerSuite
   with ForAllTestContainer
   with createRepositories
   with GetConnection {
@@ -36,7 +36,7 @@ class ProductControllerSpec extends PlaySpec
       val home: Future[Result] = route(app, request).get
 
       val products: Seq[ProductResource] = Json.fromJson[Seq[ProductResource]](contentAsJson(home)).get
-      products.filter(_.id == 1).head mustBe (ProductResource(1, "Clothes", "Shirt", "W", "M", 30.5))
+      products.filter(_.id == 1).head mustBe ProductResource(1, "Clothes", "Shirt", "W", "M", 30.5)
     }
 
     "render the list of products when url ends with a trailing slash" in {
@@ -48,7 +48,7 @@ class ProductControllerSpec extends PlaySpec
       val home: Future[Result] = route(app, request).get
 
       val products: Seq[ProductResource] = Json.fromJson[Seq[ProductResource]](contentAsJson(home)).get
-      products.filter(_.id == 1).head mustBe (ProductResource(1, "Clothes", "Shirt", "W", "M", 30.5))
+      products.filter(_.id == 1).head mustBe ProductResource(1, "Clothes", "Shirt", "W", "M", 30.5)
     }
 
     "insert or delete a product to and from database" in {

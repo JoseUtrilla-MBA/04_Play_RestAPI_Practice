@@ -28,10 +28,9 @@ case class ProductController @Inject()(cc: ControllerComponents)
       productService.getProducts.map { products =>
         typeProduct match {
           case "" => Ok(Json.toJson(products))
-          case "basic" => {
+          case "basic" =>
             val basicProducts = products.map(product => BasicProductResource(product.name, product.price))
             Ok(Json.toJson(basicProducts))
-          }
         }
       }
     }
@@ -45,14 +44,19 @@ case class ProductController @Inject()(cc: ControllerComponents)
     val productService =
         getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
-    productService.getProduct(id).map { product =>
+    productService.getProduct(id).map { either =>
       idAndType match {
 
-        case str if !str.contains("/") => Ok(Json.toJson(product))
-        case str if str == s"$id/basic" => {
-          val basicProduct = product.map(product => BasicProductResource(product.name, product.price))
-          Ok(Json.toJson(basicProduct))
+        case str if !str.contains("/") => either match {
+          case Right(productResource)=>Ok(Json.toJson(productResource))
+          case Left(report) => Ok(Json.toJson(report))
         }
+        case str if str == s"$id/basic" =>
+          either match {
+           case Right(productResource)=>
+             Ok(Json.toJson(BasicProductResource(productResource.name, productResource.price)))
+           case Left(report) => Ok(Json.toJson(report))
+         }
       }
     }
   }
