@@ -1,5 +1,5 @@
 -- !Ups
-CREATE TABLE product (
+CREATE TABLE if not exists product (
     id_product BIGSERIAL NOT NULL PRIMARY KEY,
     id_typeproduct BIGINT REFERENCES typeproduct(id_typeproduct),
     name VARCHAR (50),
@@ -10,4 +10,4 @@ CREATE TABLE product (
 
 -- !Downs
 
-DROP TABLE product;
+DROP TABLE IF EXISTS product;

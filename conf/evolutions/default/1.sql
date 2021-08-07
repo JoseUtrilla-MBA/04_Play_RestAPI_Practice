@@ -6,4 +6,4 @@ CREATE TABLE if not exists typeproduct (
 
 -- !Downs
 
-DROP TABLE typeproduct;
+DROP TABLE IF EXISTS typeproduct;

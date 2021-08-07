@@ -6,7 +6,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import products.controller.resource.GetProductService._
 import products.data.PoolConnection
-import products.data.resource.Report
+import products.data.resource.{Report, CreateRepositories}
 import products.models._
 
 import javax.inject.Inject
@@ -15,7 +15,14 @@ import scala.language.postfixOps
 
 case class ProductController @Inject()(cc: ControllerComponents)
                                       (implicit ec: ExecutionContext)
-  extends AbstractController(cc) {
+  extends AbstractController(cc) with CreateRepositories {
+
+
+  def restartTables: Action[AnyContent] = Action { implicit request =>
+    cleanTables()
+    createTables()
+    Redirect("/products/")
+  }
 
   private val logger = Logger(this.getClass)
 
@@ -42,29 +49,29 @@ case class ProductController @Inject()(cc: ControllerComponents)
 
     logger.trace(s"showProduct: id = $id")
     val productService =
-        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
+      getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
     productService.getProduct(id).map { either =>
       idAndType match {
 
         case str if !str.contains("/") => either match {
-          case Right(productResource)=>Ok(Json.toJson(productResource))
+          case Right(productResource) => Ok(Json.toJson(productResource))
           case Left(report) => Ok(Json.toJson(report))
         }
         case str if str == s"$id/basic" =>
           either match {
-           case Right(productResource)=>
-             Ok(Json.toJson(BasicProductResource(productResource.name, productResource.price)))
-           case Left(report) => Ok(Json.toJson(report))
-         }
+            case Right(productResource) =>
+              Ok(Json.toJson(BasicProductResource(productResource.name, productResource.price)))
+            case Left(report) => Ok(Json.toJson(report))
+          }
       }
     }
   }
 
-  def process: Action[JsValue] = Action.async(parse.json) { implicit request =>
+  def upsert: Action[JsValue] = Action.async(parse.json) { implicit request =>
     logger.trace("add:")
     val productService =
-        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
+      getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
     val productsToProcess = request.body.validate[ProductsToProcess]
     productsToProcess.fold(
@@ -83,8 +90,8 @@ case class ProductController @Inject()(cc: ControllerComponents)
           case _ => Future {
             val report = Report(typeProcess, productsToProcess.products.length, 0,
               productsToProcess.products.length, Map(
-                s"""ERROR: tipo de proceso no especificado o es incorrecto <<typeProcess>>.
-                   | Detail: tipo introducido: '$typeProcess', tipos habilitados: 'insert', 'update'."""
+                s"""ERROR: unspecified or incorrect process type <<typeProcess>>.
+                   | Detail: process type: '$typeProcess', enabled types: 'insert', 'update'."""
                   .stripMargin -> productsToProcess.products.map(product => product.id)))
 
             Ok(Json.toJson(report))
@@ -96,7 +103,7 @@ case class ProductController @Inject()(cc: ControllerComponents)
   def delete(id: String): Action[AnyContent] = Action.async { implicit request =>
     logger.trace(s"delete: id = $id")
     val productService =
-        getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
+      getProductService(Either.catchNonFatal(request.attrs(connectionKey)).getOrElse(PoolConnection.transactor))
 
     productService.removeProduct(id).map(message => Ok(Json.toJson(message)))
   }

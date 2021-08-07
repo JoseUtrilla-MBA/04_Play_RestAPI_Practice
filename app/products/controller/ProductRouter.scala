@@ -28,6 +28,12 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
       controller.showProducts("basic")
 
     /**
+      * GET(p"/reset") request is routed to the controller method: restartTables.
+      */
+    case GET(p"/reset") =>
+      controller.restartTables
+
+    /**
       * GET(p"/delete/$id") request is routed to the controller method: delete(id), which delete a record from database,
       * which is selected previously by its id.
       * It will list all the products in our database without the deleted one.
@@ -54,7 +60,7 @@ class ProductRouter @Inject()(controller: ProductController) extends SimpleRoute
       * the controller's process() method will insert a new record or update an existing one, in our database.
       */
     case POST(p"/") =>
-      controller.process
+      controller.upsert
   }
 
 }

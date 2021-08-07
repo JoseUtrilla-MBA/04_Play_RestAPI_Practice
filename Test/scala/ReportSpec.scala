@@ -7,17 +7,12 @@ import products.models.ProductsToProcess
 
 class ReportSpec extends AnyFlatSpec {
 
-  //RESOURCES______________________________________________________________________________________________________
-
   //case class to force errors when is passed to play.api.libs.json,JsValue.validate__
   case class ErrorProductsToProcess(typeProcess: String, products: List[ErrorProductResource])
 
   object ErrorProductsToProcess {
     implicit val format: Format[ErrorProductsToProcess] = Json.format
   }
-
-
-  //ErrorProductsToProcess instances to evaluate__________________________________________
 
   //ProductResource with an error: the parameter typeProductName must be a String like ("Clothes"), instead an Integer
   case class ErrorProductResource(id: Int, typeProductName: Int, name: String,
@@ -33,10 +28,6 @@ class ReportSpec extends AnyFlatSpec {
   val jsonProductsToProcessWithErrors: JsValue = Json.toJson(productsToProcessWithErrors)
 
 
-
-
-  //TESTING setReportFromValidationError method test_______________________________________________________________
-
   "setReportFromValidationError method" should
     "translate errors from 'play.api.libs.json,JsValue.validate' to a products.data.resource.Report instance" in {
     val productsResourceValidated = jsonProductsToProcessWithErrors.validate[ProductsToProcess]
@@ -44,15 +35,15 @@ class ReportSpec extends AnyFlatSpec {
       errors => {
         val report = setReportFromValidationError(errors)
 
-        val errorsContainsPathOfFieldAffected = errors.head._1.toString().contains("products(0)/typeProductName")//error,s path
-        val errorContainsMessagesTypeError = errors.head._2.head.messages.head.contains("error.expected.jsstring")//error's message
+        val errorsContainsPathOfFieldAffected = errors.head._1.toString().contains("products(0)/typeProductName")
+        val errorContainsMessagesTypeError = errors.head._2.head.messages.head.contains("error.expected.jsstring")
 
         // The report instance message is built from errors messages and errors path.
         // And then, a list of element's indexes affected are assigned to these messages.
         val reportMessageContainsErrors =
           report.idsFailure.head._1
-            .contains("ERROR: TypeFieldError.expected.jsstring in Path: /products/typeProductName. DETAIL: indexes")//report's message, and path
-        val reportContainsListOfIndexesAffected = report.idsFailure.head._2.head == 0 //index with error
+            .contains("ERROR: TypeFieldError.expected.jsstring in Path: /products/typeProductName. DETAIL: indexes")
+        val reportContainsListOfIndexesAffected = report.idsFailure.head._2.head == 0
 
         assert(reportMessageContainsErrors &&
           errorsContainsPathOfFieldAffected &&

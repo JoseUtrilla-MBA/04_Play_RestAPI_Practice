@@ -12,9 +12,10 @@ import scala.concurrent.Future
 
 case class TypeProductData(id_typeProduct: Int = 4, name: String = "Undefined")
 
-trait TypeProductRepository extends Repository[TypeProductData]{
+trait TypeProductRepository extends Repository[TypeProductData] {
   def Get(id: Int): Option[TypeProductData]
 }
+
 case class TypeProductRepositoryImpl(transactor: Resource[IO, HikariTransactor[IO]]) extends TypeProductRepository {
   private val logger = Logger(this.getClass)
 
@@ -26,19 +27,18 @@ case class TypeProductRepositoryImpl(transactor: Resource[IO, HikariTransactor[I
   }
 
   override def get(id: Int): Future[Option[TypeProductData]] = {
-    //logger.trace(s"get: id = $id")
 
     val typeProductById = sql"select * from typeproduct where id_typeproduct = $id".query[TypeProductData].option
     transactor.use(typeProductById.transact[IO]).unsafeToFuture()
   }
-   def Get(id: Int): Option[TypeProductData] = {
-    //logger.trace(s"get: id = $id")
+
+  def Get(id: Int): Option[TypeProductData] = {
+
     val typeProductById = sql"select * from typeproduct where id_typeproduct = $id".query[TypeProductData].option
     transactor.use(typeProductById.transact[IO]).unsafeRunSync()
   }
 
   override def getByName(name: String): Future[Option[TypeProductData]] = {
-    //logger.trace(s"getByName: name = $name")
 
     val typeProductById = sql"select * from typeproduct where name = $name".query[TypeProductData].option
     transactor.use(typeProductById.transact[IO]).unsafeToFuture()
