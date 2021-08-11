@@ -19,7 +19,7 @@ import scala.language.postfixOps
 class ProductControllerSpec extends PlaySpec
   with GuiceOneAppPerSuite
   with ForAllTestContainer
-  with createRepositories
+  with CreateRepositories
   with GetConnection {
 
   override val container: PostgreSQLContainer = PostgreSQLContainer()
