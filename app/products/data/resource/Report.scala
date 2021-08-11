@@ -1,7 +1,7 @@
 package products.data.resource
 
 import play.api.libs.json.{Format, JsPath, Json, JsonValidationError}
-
+import cats.implicits._
 
 case class Report(typeRequest: String = "",
                   items: Int = 0,
@@ -19,12 +19,16 @@ object Report {
         error <- errors
       } yield {
         val pathString = error._1.toString()
-        val id = pathString.substring(1 + pathString.indexOf('('), pathString.indexOf(')'))
+        val id = Either.catchNonFatal(pathString.substring(1 + pathString.indexOf('('), pathString.indexOf(')'))) match {
+          case Right(id) => id.toInt
+          case Left(_) => 999999
+        }
+
         val errorsString = {
           for {
             jsonValidationError <- error._2
             message <- jsonValidationError.messages
-          } yield (Option(id.toInt).getOrElse(999999), "ERROR: TypeFieldE"
+          } yield (id, "ERROR: TypeFieldE"
             + message.substring(1) + " in Path: "
             + pathString.replace("(" + id + ")", "") + ". DETAIL: indexes")
         }.toList

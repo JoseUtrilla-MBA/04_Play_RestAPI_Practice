@@ -1,6 +1,6 @@
 # ProductsRestAPI
 
-ProductrestAPI is created to manage a clothing products store
+ProductRestAPI is created to manage a clothing products store
 
 
 ### Running
@@ -86,3 +86,14 @@ If the 'insert' or 'update' process progresses successfully, it will return a re
 }
 
 ```
+
+### Testing
+
+You can test without the need for a local database, via testcontainer from docker. You must first have docker installed,  
+and them run the following commands:
+
+```bash
+sbt IntegrationTest/test   --> to test ProductControllerSpec
+sbt test                   --> to test ReportSpec
+```
+
