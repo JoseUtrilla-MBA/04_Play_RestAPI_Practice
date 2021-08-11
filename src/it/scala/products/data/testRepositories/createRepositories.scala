@@ -4,7 +4,7 @@ import com.dimafeng.testcontainers.PostgreSQLContainer
 import play.api.db.evolutions.Evolutions
 import play.api.db.{Database, Databases}
 
-trait createRepositories {
+trait CreateRepositories {
 
   def database(container: PostgreSQLContainer): Database = Databases(
     driver = container.driverClassName,
