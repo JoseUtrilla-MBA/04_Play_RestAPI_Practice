@@ -9,7 +9,7 @@ import play.api.test.CSRFTokenHelper.CSRFRequest
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{GET, HOST, POST, contentAsJson, defaultAwaitTimeout, route, writeableOf_AnyContentAsEmpty}
 import products.controller.resource.GetProductService
-import products.data.testRepositories.createRepositories
+import products.data.testRepositories.CreateRepositories
 import products.dataTest.GetConnection
 import products.models.{ProductResource, ProductsToProcess}
 import scala.concurrent.duration._
