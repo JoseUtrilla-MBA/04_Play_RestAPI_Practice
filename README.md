@@ -19,7 +19,7 @@ We use play.api.db.evolutions to start a database, creating its tables and eleve
 If at any time you need to reset the database, apply the following URL:  ```http://localhost:9000/products/reset```  
 
 
-Has the following URLs to test the different options that the Application offers to the client.  
+You have the following URLs to test the different options that the Application offers to the client.  
 
 ```bash
 http://localhost:9000/products                --> to see a json which contains all prducts with complete information.
@@ -81,7 +81,7 @@ If the 'insert' or 'update' process progresses successfully, it will return a re
     "ok": 1,
     "ko": 1,
     "idsFailure": {
-        "ERROR: Duplicate key violates unique constraint <<product_pkey>> \ n Detail: Key already exists (id_product) = (2).": [2]
+        "ERROR: Duplicate key violates unique constraint <<product_pkey>> \ n Detail: Key already exists (id_product) = (1).": [1]
     }
 }
 

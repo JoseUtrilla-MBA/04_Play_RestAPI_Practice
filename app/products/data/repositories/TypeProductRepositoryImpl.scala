@@ -47,19 +47,19 @@ case class TypeProductRepositoryImpl(transactor: Resource[IO, HikariTransactor[I
   override def insert(typeProducts: List[TypeProductData]): Future[Report] = {
     logger.trace(s"insert: typeProducts with ${typeProducts.length} elements")
 
-    def getConnection(typeProduct: TypeProductData): doobie.ConnectionIO[Int] =
+    def getDoobieConnectionIO(typeProduct: TypeProductData): doobie.ConnectionIO[Int] =
       sql"""insert into typeproduct (id_typeproduct, name)
            values (${typeProduct.id_typeProduct}, ${typeProduct.name})""".update.run
 
     val idsResultFuture = (for {
       typeProduct <- typeProducts
     } yield {
-      transactor.use(getConnection(typeProduct).transact[IO]).unsafeToFuture().map { n =>
+      transactor.use(getDoobieConnectionIO(typeProduct).transact[IO]).unsafeToFuture().map { n =>
         if (n > 0) (1, typeProduct.id_typeProduct, "Success") else (0, typeProduct.id_typeProduct, "undefined error")
       } recover {
         case e: Throwable => (0, typeProduct.id_typeProduct, e.getMessage)
       }
-    }).sequence.map(anything => anything.groupMap(_._1)(e => (e._3, e._2)))
+    }).sequence.map(list => list.groupMap(_._1)(e => (e._3, e._2)))
 
     idsResultFuture.map { idsResult =>
 
@@ -76,20 +76,20 @@ case class TypeProductRepositoryImpl(transactor: Resource[IO, HikariTransactor[I
   override def update(typeProducts: List[TypeProductData]): Future[Report] = {
     logger.trace(s"update: typeProducts with ${typeProducts.length} elements")
 
-    def getConnection(typeProduct: TypeProductData): doobie.ConnectionIO[Int] =
+    def getDoobieConnectionIO(typeProduct: TypeProductData): doobie.ConnectionIO[Int] =
       sql"""update typeproduct set name = ${typeProduct.name}
             where id_typeproduct = ${typeProduct.id_typeProduct}""".update.run
 
     val idsResultFuture = (for {
       typeProduct <- typeProducts
     } yield {
-      transactor.use(getConnection(typeProduct).transact[IO]).unsafeToFuture().map { n =>
+      transactor.use(getDoobieConnectionIO(typeProduct).transact[IO]).unsafeToFuture().map { n =>
         if (n > 0) (1, typeProduct.id_typeProduct, "Success")
         else (0, typeProduct.id_typeProduct, "undefined error, possibly this typeProduct is not in database")
       } recover {
         case e: Throwable => (0, typeProduct.id_typeProduct, e.getMessage)
       }
-    }).sequence.map(anything => anything.groupMap(_._1)(e => (e._3, e._2)))
+    }).sequence.map(list => list.groupMap(_._1)(e => (e._3, e._2)))
 
     idsResultFuture.map { idsResult =>
 

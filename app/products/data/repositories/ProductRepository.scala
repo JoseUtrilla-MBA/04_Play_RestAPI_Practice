@@ -47,7 +47,7 @@ case class ProductRepository(transactor: Resource[IO, HikariTransactor[IO]]) ext
   override def insert(products: List[ProductData]): Future[Report] = {
     logger.trace(s"insert: products with ${products.length} elements")
 
-    def getConnection(product: ProductData): doobie.ConnectionIO[Int] =
+    def getDoobieConnectionIO(product: ProductData): doobie.ConnectionIO[Int] =
       sql"""insert into product (id_product, id_typeProduct, name, gender, size, price)
            values (${product.id},${product.typeProduct.id_typeProduct}, ${product.name},
            ${product.gender},${product.size},${product.price})""".update.run
@@ -55,12 +55,12 @@ case class ProductRepository(transactor: Resource[IO, HikariTransactor[IO]]) ext
     val idsResultFuture = (for {
       product <- products
     } yield {
-      transactor.use(getConnection(product).transact[IO]).unsafeToFuture().map { n =>
+      transactor.use(getDoobieConnectionIO(product).transact[IO]).unsafeToFuture().map { n =>
         if (n > 0) (1, product.id, "Success") else (0, product.id, "undefined error")
       } recover {
         case e: Throwable => (0, product.id, e.getMessage)
       }
-    }).sequence.map(anything => anything.groupMap(_._1)(e => (e._3, e._2)))
+    }).sequence.map(list => list.groupMap(_._1)(e => (e._3, e._2)))
 
     idsResultFuture.map { idsResult =>
 
@@ -79,20 +79,20 @@ case class ProductRepository(transactor: Resource[IO, HikariTransactor[IO]]) ext
       products.length
     } elements")
 
-    def getConnection(product: ProductData): doobie.ConnectionIO[Int] =
+    def getDoobieConnectionIO(product: ProductData): doobie.ConnectionIO[Int] =
       sql"""update product set id_typeProduct= ${product.typeProduct.id_typeProduct}, name= ${product.name}, gender= ${product.gender}
            , size= ${product.size}, price= ${product.price} where id_product= ${product.id}""".update.run
 
     val idsResultFuture = (for {
       product <- products
     } yield {
-      transactor.use(getConnection(product).transact[IO]).unsafeToFuture().map { n =>
+      transactor.use(getDoobieConnectionIO(product).transact[IO]).unsafeToFuture().map { n =>
         if (n > 0) (1, product.id, "Success")
         else (0, product.id, "undefined error, possibly this typeProduct is not in database")
       } recover {
         case e: Throwable => (0, product.id, e.getMessage)
       }
-    }).sequence.map(anything => anything.groupMap(_._1)(e => (e._3, e._2)))
+    }).sequence.map(list => list.groupMap(_._1)(e => (e._3, e._2)))
 
     idsResultFuture.map { idsResult =>
 
