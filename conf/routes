@@ -1,1 +1,1 @@
-->         /v1/products              v1.product.ProductRouter
+->         /products              products.controller.ProductRouter

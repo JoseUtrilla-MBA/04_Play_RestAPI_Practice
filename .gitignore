@@ -1,5 +1,7 @@
 .bsp/
 .idea
+Note
+NOTICE
 logs
 project/target
 project/project/target
@@ -8,3 +10,13 @@ null
 .scalafix.conf
 webui.sbt
 assignment.sbt
+gatling
+scripts
+.bloop/
+.metals/
+.vscode/
+project/.bloop/
+project/metals.sbt
+project/project/
+
+
